@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Imprimir clave SSH (solo para depuración)
+        run: |
+          echo 'Clave SSH (solo para depuración):'
+          echo '${{ secrets.SSH_PRIVATE_KEY }}' | head -n 2
+          echo '${{ secrets.SSH_PRIVATE_KEY }}' | tail -n 2
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Test SSH connection
+        id: test_ssh
+        run: |
+          echo "** Testing SSH connection... **"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "echo Connection successful" && echo "** SSH connection successful! **" || echo "** SSH connection failed! Check credentials and key setup. **"
+
+      - name: Actualizar o clonar repositorio
+        if: steps.test_ssh.outcome == 'success'
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            # Check if the directory exists
+            if [ -d "/home/ApiBotServer/ApiBotServer/.git" ]; then
+              cd /home/ApiBotServer/ApiBotServer/
+              echo "El repositorio existe. Actualizando..."
+              git fetch origin
+              git reset --hard origin/main
+            else
+              cd /home/ApiBotServer/
+              echo "El repositorio no existe. Clonando..."
+              git clone https://${{ secrets.TOKEN_GITHUB }}@github.com/RpaGnp/ApiBotServer.git
+            fi
+          EOF
+
+      - name: Build and Start Docker Container
+        if: steps.test_ssh.outcome == 'success'  # Assuming a successful prior step
+        run: |
+          echo "** Construyendo y levantando contenedor Docker... **"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /home/ApiBotServer/ApiBotServer/
+            source start_bots.sh
+            # docker-compose build
+            # docker-compose up -d
+          EOF
