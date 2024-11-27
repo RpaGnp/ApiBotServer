@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   api_bot_server:
@@ -9,6 +9,7 @@ services:
     volumes:
       - .:/app
       # - "C:/DBGestionBot/BotcndRazones:/mnt/images"  # Montar la carpeta en el contenedor en Windows
-      - "/home/Bot_Server/DBGestionBot/BotcndRazones:/mnt/images"  # Montar la carpeta en el contenedor en Linux
-      - /var/run/docker.sock:/var/run/docker.sock 
+      - "/home/Bot_Server/DBGestionBot/BotcndRazones:/mnt/images" # Montar la carpeta en el contenedor en Linux
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/nginx/ssl:/certs
     privileged: true

@@ -74,6 +74,38 @@ async def GetSpr(data: DatosGet):
     except Exception as e:        
         return {'Datos': str(e)}
 
+
+@app.get('/restart_containers')
+async def restart_containers(name: str):
+
+    client = docker.from_env()
+
+    # Lista de nombres de contenedores que deseas reiniciar
+    containers_to_restart = [name, name.replace("_chrome", "")]  # Cambia estos nombres
+    print(containers_to_restart)
+    # containers_to_restart = [name]  # Cambia estos nombres
+
+    res = []
+    # Reiniciar cada contenedor en la lista
+    for container_name in containers_to_restart:
+        try:
+            # Buscar el contenedor por nombres
+            container = client.containers.get(container_name)
+            # Reiniciar el contenedor
+            container.restart()
+            text = f"El contenedor '{container_name}' ha sido reiniciado con éxito."
+        except docker.errors.NotFound:
+            text = f"No se encontró ningún contenedor con el nombre '{container_name}'."
+        except Exception as e:
+            text = f"Ocurrió un error al intentar reiniciar el contenedor '{container_name}': {e}"
+        
+        print(container_name)
+        res.append({container_name:text})
+
+    print(res)
+    return res
+
+
 @app.get('/get_dockers')
 async def obtener_contenedores():
 
